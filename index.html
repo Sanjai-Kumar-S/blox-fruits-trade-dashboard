@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blox Fruits Trade Controller // Cloud Backend</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+    <div class="bg-glow bg-glow-cyan"></div>
+    <div class="bg-glow bg-glow-violet"></div>
+
+    <div class="container">
+        <!-- Header Bar -->
+        <header class="header">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1>Blox Fruits Trade Nexus</h1>
+                    <p class="subtitle">Cloud Command Relay &amp; HttpService Polling Backend</p>
+                </div>
+            </div>
+
+            <div class="status-group">
+                <div class="status-pill" id="backendStatusPill">
+                    <span class="pulse-dot online" id="statusDot"></span>
+                    <span id="statusText">Backend Online</span>
+                </div>
+                <div class="metric-chip">
+                    <span class="metric-label">Pending Queue:</span>
+                    <span class="metric-value" id="queueCountBadge">0</span>
+                </div>
+                <div class="metric-chip">
+                    <span class="metric-label">Client Polls:</span>
+                    <span class="metric-value" id="pollCountBadge">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Grid -->
+        <main class="dashboard-grid">
+            <!-- Left Column: Controls -->
+            <section class="controls-column">
+                <!-- Action Buttons Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>
+                            <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            Quick Trade Actions
+                        </h2>
+                        <span class="card-tag">POST /api/command</span>
+                    </div>
+                    <p class="card-desc">Dispatch instant trade state transitions to the active Roblox client queue.</p>
+
+                    <div class="action-buttons-grid">
+                        <button class="btn btn-accept" data-command="accept" data-label="Accept Trade">
+                            <span class="btn-glow"></span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            <div class="btn-text">
+                                <span class="btn-title">Accept Trade</span>
+                                <span class="btn-cmd">cmd: "accept"</span>
+                            </div>
+                        </button>
+
+                        <button class="btn btn-cancel" data-command="cancel" data-label="Cancel Trade">
+                            <span class="btn-glow"></span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            <div class="btn-text">
+                                <span class="btn-title">Cancel Trade</span>
+                                <span class="btn-cmd">cmd: "cancel"</span>
+                            </div>
+                        </button>
+
+                        <button class="btn btn-add-all" data-command="addall" data-label="Add All Items">
+                            <span class="btn-glow"></span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                            <div class="btn-text">
+                                <span class="btn-title">Add All Items</span>
+                                <span class="btn-cmd">cmd: "addall"</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Item Input Bar Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>
+                            <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            Custom Fruit / Item Dispatcher
+                        </h2>
+                        <label class="toggle-control" title="Converts '!add Phoenix-Phoenix' into 'addphoenix-phoenix'">
+                            <input type="checkbox" id="normalizeToggle" checked />
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Normalize <code>!add</code></span>
+                        </label>
+                    </div>
+                    <p class="card-desc">
+                        Send specific fruit, perm, or skin strings (e.g., <code>!add Phoenix-Phoenix</code> or <code>!add arcsteel</code>).
+                    </p>
+
+                    <form id="customCommandForm" class="item-input-bar" autocomplete="off">
+                        <div class="input-wrapper">
+                            <span class="input-prefix">&gt;_</span>
+                            <input
+                                type="text"
+                                id="itemInput"
+                                placeholder="e.g. !add Phoenix-Phoenix or !add arcsteel"
+                                required
+                            />
+                        </div>
+                        <button type="submit" class="btn btn-submit" id="addItemBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                            <span>Add Item</span>
+                        </button>
+                    </form>
+
+                    <div class="preset-chips">
+                        <span class="chip-label">Quick Presets:</span>
+                        <button type="button" class="chip" data-preset="!add Phoenix-Phoenix">!add Phoenix-Phoenix</button>
+                        <button type="button" class="chip" data-preset="!add Kitsune-Kitsune">!add Kitsune-Kitsune</button>
+                        <button type="button" class="chip" data-preset="!add Dragon-Dragon">!add Dragon-Dragon</button>
+                        <button type="button" class="chip" data-preset="!add arcsteel">!add arcsteel</button>
+                    </div>
+                </div>
+
+                <!-- Active Queue & Endpoint Inspector -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>
+                            <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 6h16M4 12h16M4 18h10"/>
+                            </svg>
+                            Queued Payload &amp; Endpoint Simulator
+                        </h2>
+                        <div class="header-actions">
+                            <button type="button" class="btn-mini" id="simulatePollBtn" title="Test GET /get_commands right now">
+                                Simulate Client Poll
+                            </button>
+                            <button type="button" class="btn-mini btn-mini-danger" id="clearQueueBtn" title="Clear pending queue">
+                                Clear Queue
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="queue-preview-box">
+                        <div class="queue-meta">
+                            <span>Next <code>GET /get_commands</code> response:</span>
+                            <span id="lastPollTime" class="meta-muted">Last poll: Never</span>
+                        </div>
+                        <pre id="nextPayloadPreview" class="code-preview">{"command": null}</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Column: Live Status Log / Terminal Window -->
+            <section class="terminal-column">
+                <div class="card terminal-card">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span class="dot dot-red"></span>
+                            <span class="dot dot-amber"></span>
+                            <span class="dot dot-green"></span>
+                            <span class="terminal-title">live_relay_terminal // stdout</span>
+                        </div>
+                        <div class="terminal-controls">
+                            <label class="toggle-control">
+                                <input type="checkbox" id="showEmptyPollsToggle" checked />
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-label">Show Empty Polls</span>
+                            </label>
+                            <button type="button" class="btn-mini" id="clearTerminalBtn">Clear Log</button>
+                        </div>
+                    </div>
+
+                    <div class="terminal-window" id="terminalWindow">
+                        <!-- Dynamically populated log lines -->
+                    </div>
+
+                    <div class="terminal-footer">
+                        <span id="terminalStatus">Syncing live status every 1.2s...</span>
+                        <span class="cors-badge">CORS: Enabled (*)</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
